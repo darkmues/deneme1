@@ -8,19 +8,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ClockScreen from '../screens/ClockScreen';
 import HoursScreen from '../screens/HoursScreen';
+import CalendarScreen from '../screens/CalendarScreen';
+import JournalScreen from '../screens/JournalScreen';
 import RemindersScreen from '../screens/RemindersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { useI18n } from '../i18n';
 
 const Tab = createBottomTabNavigator();
 
-function GoldTabIcon({ name, focused }) {
+function GoldTabIcon({ name, focused, colors }) {
   if (focused) {
     return (
       <LinearGradient colors={colors.gradientGold} style={styles.activeIcon}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <Ionicons name={name} size={20} color="#000" />
+        <Ionicons name={name} size={20} color={colors.isDark ? '#000' : '#fff'} />
       </LinearGradient>
     );
   }
@@ -34,6 +36,7 @@ function TabLabel({ labelKey, color }) {
 
 export default function AppNavigator() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <NavigationContainer>
@@ -54,19 +57,27 @@ export default function AppNavigator() {
       >
         <Tab.Screen name="Clock" component={ClockScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_clock" color={color} />,
-          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'time' : 'time-outline'} focused={focused} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'time' : 'time-outline'} focused={focused} colors={colors} />,
         }} />
         <Tab.Screen name="Hours" component={HoursScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_hours" color={color} />,
-          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'book' : 'book-outline'} focused={focused} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'book' : 'book-outline'} focused={focused} colors={colors} />,
+        }} />
+        <Tab.Screen name="Calendar" component={CalendarScreen} options={{
+          tabBarLabel: ({ color }) => <TabLabel labelKey="tab_calendar" color={color} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} colors={colors} />,
+        }} />
+        <Tab.Screen name="Journal" component={JournalScreen} options={{
+          tabBarLabel: ({ color }) => <TabLabel labelKey="tab_journal" color={color} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'book' : 'book-outline'} focused={focused} colors={colors} />,
         }} />
         <Tab.Screen name="Reminders" component={RemindersScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_reminders" color={color} />,
-          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} colors={colors} />,
         }} />
         <Tab.Screen name="Settings" component={SettingsScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_settings" color={color} />,
-          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'settings' : 'settings-outline'} focused={focused} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'settings' : 'settings-outline'} focused={focused} colors={colors} />,
         }} />
       </Tab.Navigator>
     </NavigationContainer>

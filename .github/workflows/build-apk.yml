@@ -48,6 +48,20 @@ jobs:
       - name: Gradlew izni ver
         run: chmod +x android/gradlew
 
+      - name: Gradle Java toolchain yolu ayarla
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.java.installations.paths=$JAVA_HOME" >> ~/.gradle/gradle.properties
+          echo "org.gradle.java.installations.auto-download=false" >> ~/.gradle/gradle.properties
+          # foojay-resolver CI ortamında engellidir — included build'den kaldır
+          sed -i '/foojay-resolver-convention/d' node_modules/@react-native/gradle-plugin/settings.gradle.kts
+          # jvmToolchain(17) CI'da Gradle'ın Java 17'yi bulamamasına neden olur
+          find node_modules/@react-native/gradle-plugin -name "*.gradle.kts" \
+            -exec sed -i 's/kotlin { jvmToolchain(17) }/\/\/ jvmToolchain patched for CI/g' {} +
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "Toolchain config:"
+          cat ~/.gradle/gradle.properties
+
       - name: Ortam bilgisi
         run: |
           echo "=== Bellek ==="
@@ -77,6 +91,7 @@ jobs:
             --no-daemon \
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
+            -Pandroid.kotlinVersion=1.9.24 \
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
         env:
@@ -102,6 +117,21 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat /tmp/gradle-build.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Log dosyası bulunamadı — assembleDebug başlamadı"
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Hata logunu PR yorumuna yaz
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --head "${{ github.ref_name }}" --json number -q '.[0].number' 2>/dev/null)
+          if [ -n "$PR_NUMBER" ]; then
+            LOG=$(cat /tmp/gradle-build.log 2>/dev/null | head -150 || echo "Log dosyası yok")
+            gh pr comment "$PR_NUMBER" --repo ${{ github.repository }} --body "## ❌ Gradle Build Logu (otomatik)
+
+\`\`\`
+${LOG}
+\`\`\`"
+          fi
 
       - name: Gradle log artifact (hata durumunda)
         if: failure()

@@ -15,7 +15,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-      contents: read
+      contents: write
 
     steps:
       - name: CI başladı bildirimi
@@ -52,8 +52,44 @@ jobs:
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;26.1.10909125"
 
-      - name: npm install
-        run: npm install --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
+      - name: npm ci
+        run: npm ci --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
+
+      - name: react-native-screens 4.4.0 garantile
+        run: |
+          SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version" 2>/dev/null || echo "unknown")
+          echo "Mevcut react-native-screens: $SCREEN_VER"
+          if [[ "$SCREEN_VER" != "4.4.0" ]]; then
+            echo "4.4.0 değil, yükseltiliyor..."
+            npm install react-native-screens@4.4.0 --legacy-peer-deps
+            echo "Yeni sürüm: $(node -p "require('./node_modules/react-native-screens/package.json').version")"
+          fi
+
+      - name: react-native-screens StateWrapper yaması
+        run: |
+          KT=node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
+          if [ -f "$KT" ]; then
+            SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version")
+            echo "react-native-screens sürümü: $SCREEN_VER"
+            python3 - <<'PYEOF'
+import re, sys
+kt = 'node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt'
+with open(kt) as f:
+    src = f.read()
+orig = src
+# Fix: setStateWrapper nullable argument
+src = src.replace('setStateWrapper(stateWrapper)', 'setStateWrapper(stateWrapper!!)')
+# Fix: ensure override uses nullable StateWrapper param
+src = re.sub(r'(stateWrapper\s*:\s*StateWrapper)\b(?!\?)', r'\1?', src)
+if src != orig:
+    with open(kt, 'w') as f:
+        f.write(src)
+    print('✅ ScreenViewManager.kt yamalandı')
+else:
+    print('ℹ️  Yama gerekmedi (zaten uyumlu)')
+PYEOF
+            grep -n "StateWrapper\|setStateWrapper" "$KT"
+          fi
 
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean 2>&1 | tee /tmp/expo-prebuild.log; exit ${PIPESTATUS[0]}
@@ -83,8 +119,9 @@ jobs:
           echo "org.gradle.java.installations.paths=$JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.auto-download=false" >> android/gradle.properties
+          echo "bundleInDebug=true" >> android/gradle.properties
           echo "=== android/gradle.properties son satirlar ==="
-          tail -6 android/gradle.properties
+          tail -7 android/gradle.properties
 
       - name: Ortam bilgisi
         run: |
@@ -106,10 +143,18 @@ jobs:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx4g -XX:MaxMetaspaceSize=512m'
           JAVA_OPTS: '-Xmx2g'
 
-      - name: APK build et (Debug)
+      - name: Release build icin debug keystore ayarla
+        run: |
+          # Expo prebuild'in urettigi build.gradle'da release genellikle debug keystore kullanir
+          # Kesin emin olmak icin signingConfigs.release -> signingConfigs.debug yap
+          sed -i 's/signingConfig signingConfigs\.release/signingConfig signingConfigs.debug/g' android/app/build.gradle
+          echo "=== signingConfig satirlari ==="
+          grep -n "signingConfig" android/app/build.gradle || echo "signingConfig yok"
+
+      - name: APK build et (Release)
         working-directory: android
         run: |
-          ./gradlew assembleDebug \
+          ./gradlew assembleRelease \
             --no-daemon \
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
@@ -170,15 +215,33 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CanSaati-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+
+      - name: GitHub Release olarak yayınla
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          # Eski debug-build release'i sil (varsa)
+          gh release delete debug-build --yes 2>/dev/null || true
+          git push origin :refs/tags/debug-build 2>/dev/null || true
+          # Yeni release oluştur
+          gh release create debug-build "$APK#CanSaati-debug.apk" \
+            --title "Çan Saati APK (Debug)" \
+            --notes "$(printf 'Otomatik olarak oluşturulan debug APK.\n\n**SHA256:** %s\n\n**Kurulum:**\n1. CanSaati-debug.apk dosyasını indir\n2. Android: Ayarlar → Bilinmeyen kaynaklar → İzin ver\n3. APK dosyasına dokun ve kur' "$SHA")" \
+            --latest
 
       - name: Build özeti
         if: success()
         run: |
           echo "## ✅ Çan Saati APK Hazır!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Artifacts** bölümünden **CanSaati-APK** dosyasını indirin." >> $GITHUB_STEP_SUMMARY
+          echo "**Release linki:** https://github.com/darkmues/deneme1/releases/tag/debug-build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifacts** bölümünden de **CanSaati-APK** indirilebilir." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Kurulum" >> $GITHUB_STEP_SUMMARY
           echo "1. APK'yı Android cihazınıza aktarın" >> $GITHUB_STEP_SUMMARY

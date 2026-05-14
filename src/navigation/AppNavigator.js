@@ -1,33 +1,33 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { StyleSheet, Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import ChatScreen from '../screens/ChatScreen';
-import VoiceScreen from '../screens/VoiceScreen';
-import ImageScreen from '../screens/ImageScreen';
-import WritingScreen from '../screens/WritingScreen';
+import ClockScreen from '../screens/ClockScreen';
+import HoursScreen from '../screens/HoursScreen';
+import RemindersScreen from '../screens/RemindersScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
-const TabIcon = ({ name, focused, color }) => {
+const GoldTabIcon = ({ name, focused }) => {
   if (focused) {
     return (
       <LinearGradient
-        colors={colors.gradientPrimary}
-        style={styles.activeIconContainer}
+        colors={colors.gradientGold}
+        style={styles.activeIcon}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Ionicons name={name} size={22} color="#fff" />
+        <Ionicons name={name} size={20} color="#000" />
       </LinearGradient>
     );
   }
-  return <Ionicons name={name} size={22} color={color} />;
+  return <Ionicons name={name} size={22} color={colors.textMuted} />;
 };
 
 export default function AppNavigator() {
@@ -42,53 +42,45 @@ export default function AppNavigator() {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
             borderTopWidth: 1,
-            height: 60 + (Platform.OS === 'ios' ? insets.bottom : 0),
-            paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
-            paddingTop: 8,
+            height: 56 + (Platform.OS === 'ios' ? insets.bottom : 0),
+            paddingBottom: Platform.OS === 'ios' ? insets.bottom : 6,
+            paddingTop: 6,
           },
-          tabBarActiveTintColor: colors.primaryLight,
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+          tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 2 },
         }}
       >
         <Tab.Screen
-          name="Chat"
-          component={ChatScreen}
+          name="Clock"
+          component={ClockScreen}
           options={{
-            tabBarLabel: 'Sohbet',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} focused={focused} color={color} />
-            ),
+            tabBarLabel: 'Saat',
+            tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'time' : 'time-outline'} focused={focused} />,
           }}
         />
         <Tab.Screen
-          name="Voice"
-          component={VoiceScreen}
+          name="Hours"
+          component={HoursScreen}
           options={{
-            tabBarLabel: 'Ses',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon name={focused ? 'mic' : 'mic-outline'} focused={focused} color={color} />
-            ),
+            tabBarLabel: 'Dualar',
+            tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'book' : 'book-outline'} focused={focused} />,
           }}
         />
         <Tab.Screen
-          name="Image"
-          component={ImageScreen}
+          name="Reminders"
+          component={RemindersScreen}
           options={{
-            tabBarLabel: 'Görüntü',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon name={focused ? 'image' : 'image-outline'} focused={focused} color={color} />
-            ),
+            tabBarLabel: 'Hatırlatıcı',
+            tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} />,
           }}
         />
         <Tab.Screen
-          name="Writing"
-          component={WritingScreen}
+          name="Settings"
+          component={SettingsScreen}
           options={{
-            tabBarLabel: 'Yazı',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon name={focused ? 'create' : 'create-outline'} focused={focused} color={color} />
-            ),
+            tabBarLabel: 'Ayarlar',
+            tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'settings' : 'settings-outline'} focused={focused} />,
           }}
         />
       </Tab.Navigator>
@@ -97,10 +89,10 @@ export default function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  activeIconContainer: {
-    width: 40,
-    height: 32,
-    borderRadius: 16,
+  activeIcon: {
+    width: 38,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },

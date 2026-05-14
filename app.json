@@ -1,48 +1,35 @@
 {
   "expo": {
-    "name": "AI Asistan",
-    "slug": "ai-mobile-app",
+    "name": "Çan Saati",
+    "slug": "christian-bell-clock",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "aiasistan",
+    "scheme": "cansaati",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0F1E"
+      "backgroundColor": "#0D0D1A"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.aiassistant.app",
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "Ses tanıma için mikrofon erişimi gereklidir.",
-        "NSPhotoLibraryUsageDescription": "Görüntü analizi için fotoğraf galerisi erişimi gereklidir.",
-        "NSCameraUsageDescription": "Görüntü analizi için kamera erişimi gereklidir."
-      }
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cansaati.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0A0F1E"
+        "backgroundColor": "#0D0D1A"
       },
-      "package": "com.aiassistant.app",
+      "package": "com.cansaati.app",
       "permissions": [
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "CAMERA"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [{ "scheme": "aiasistan" }],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM"
       ]
     },
     "web": {
@@ -50,16 +37,17 @@
     },
     "plugins": [
       [
-        "expo-av",
+        "expo-notifications",
         {
-          "microphonePermission": "Ses tanıma için mikrofon erişimi gereklidir."
+          "icon": "./assets/icon.png",
+          "color": "#C9A84C",
+          "sounds": ["./assets/bell.wav"]
         }
       ],
       [
-        "expo-image-picker",
+        "expo-av",
         {
-          "photosPermission": "Görüntü analizi için fotoğraf galerisi erişimi gereklidir.",
-          "cameraPermission": "Görüntü analizi için kamera erişimi gereklidir."
+          "microphonePermission": false
         }
       ]
     ]

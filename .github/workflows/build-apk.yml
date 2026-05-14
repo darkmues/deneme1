@@ -28,6 +28,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Android SDK kur
         uses: android-actions/setup-android@v3
@@ -48,6 +49,21 @@ jobs:
       - name: Gradlew izni ver
         run: chmod +x android/gradlew
 
+      - name: Ortam bilgisi
+        run: |
+          echo "=== Bellek ==="
+          free -h
+          echo "=== Disk ==="
+          df -h /
+          echo "=== Java ==="
+          java -version
+          echo "=== NDK ==="
+          ls $ANDROID_HOME/ndk/ 2>/dev/null || echo "NDK dizini bulunamadi"
+          echo "=== ANDROID_HOME ==="
+          echo $ANDROID_HOME
+          echo "=== Gradle wrapper ==="
+          cat android/gradle/wrapper/gradle-wrapper.properties | grep distributionUrl
+
       - name: APK build et (Debug)
         working-directory: android
         run: |
@@ -55,10 +71,15 @@ jobs:
           exit ${PIPESTATUS[0]}
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Xmx4g -XX:MaxMetaspaceSize=512m'
+          JAVA_OPTS: '-Xmx2g'
 
       - name: Hata logunu göster
         if: failure()
-        run: tail -150 /tmp/gradle-build.log || true
+        run: |
+          echo "=== Son 200 satır ==="
+          tail -200 /tmp/gradle-build.log || true
+          echo "=== EXCEPTION içeren satırlar ==="
+          grep -i "exception\|error\|failed\|could not" /tmp/gradle-build.log | tail -50 || true
 
       - name: Gradle log artifact (hata durumunda)
         if: failure()

@@ -55,17 +55,39 @@ jobs:
       - name: npm ci
         run: npm ci --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
 
+      - name: react-native-screens 4.4.0 garantile
+        run: |
+          SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version" 2>/dev/null || echo "unknown")
+          echo "Mevcut react-native-screens: $SCREEN_VER"
+          if [[ "$SCREEN_VER" != "4.4.0" ]]; then
+            echo "4.4.0 değil, yükseltiliyor..."
+            npm install react-native-screens@4.4.0 --legacy-peer-deps
+            echo "Yeni sürüm: $(node -p "require('./node_modules/react-native-screens/package.json').version")"
+          fi
+
       - name: react-native-screens StateWrapper yaması
         run: |
-          SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version")
-          echo "react-native-screens sürümü: $SCREEN_VER"
           KT=node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
           if [ -f "$KT" ]; then
-            # setStateWrapper(stateWrapper) → setStateWrapper(stateWrapper!!) (3.x uyumluluk)
-            sed -i 's/setStateWrapper(stateWrapper)/setStateWrapper(stateWrapper!!)/g' "$KT"
-            # updateState override parametresini nullable yap
-            sed -i 's/stateWrapper: StateWrapper)/stateWrapper: StateWrapper?)/g' "$KT"
-            echo "=== StateWrapper satırları ==="
+            SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version")
+            echo "react-native-screens sürümü: $SCREEN_VER"
+            python3 - <<'PYEOF'
+import re, sys
+kt = 'node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt'
+with open(kt) as f:
+    src = f.read()
+orig = src
+# Fix: setStateWrapper nullable argument
+src = src.replace('setStateWrapper(stateWrapper)', 'setStateWrapper(stateWrapper!!)')
+# Fix: ensure override uses nullable StateWrapper param
+src = re.sub(r'(stateWrapper\s*:\s*StateWrapper)\b(?!\?)', r'\1?', src)
+if src != orig:
+    with open(kt, 'w') as f:
+        f.write(src)
+    print('✅ ScreenViewManager.kt yamalandı')
+else:
+    print('ℹ️  Yama gerekmedi (zaten uyumlu)')
+PYEOF
             grep -n "StateWrapper\|setStateWrapper" "$KT"
           fi
 

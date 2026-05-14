@@ -53,6 +53,11 @@ jobs:
           mkdir -p ~/.gradle
           echo "org.gradle.java.installations.paths=$JAVA_HOME" >> ~/.gradle/gradle.properties
           echo "org.gradle.java.installations.auto-download=false" >> ~/.gradle/gradle.properties
+          # foojay-resolver CI ortamında engellidir — included build'den kaldır
+          sed -i '/foojay-resolver-convention/d' node_modules/@react-native/gradle-plugin/settings.gradle.kts
+          echo "Toolchain ayarı OK:"
+          cat ~/.gradle/gradle.properties
+          echo "JAVA_HOME=$JAVA_HOME"
 
       - name: Ortam bilgisi
         run: |

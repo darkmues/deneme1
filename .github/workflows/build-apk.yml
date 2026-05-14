@@ -15,7 +15,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-      contents: read
+      contents: write
 
     steps:
       - name: CI başladı bildirimi
@@ -173,12 +173,30 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+      - name: GitHub Release olarak yayınla
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          # Eski debug-build release'i sil (varsa)
+          gh release delete debug-build --yes 2>/dev/null || true
+          git push origin :refs/tags/debug-build 2>/dev/null || true
+          # Yeni release oluştur
+          gh release create debug-build "$APK#CanSaati-debug.apk" \
+            --title "Çan Saati APK (Debug)" \
+            --notes "$(printf 'Otomatik olarak oluşturulan debug APK.\n\n**SHA256:** %s\n\n**Kurulum:**\n1. CanSaati-debug.apk dosyasını indir\n2. Android: Ayarlar → Bilinmeyen kaynaklar → İzin ver\n3. APK dosyasına dokun ve kur' "$SHA")" \
+            --latest
+
       - name: Build özeti
         if: success()
         run: |
           echo "## ✅ Çan Saati APK Hazır!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Artifacts** bölümünden **CanSaati-APK** dosyasını indirin." >> $GITHUB_STEP_SUMMARY
+          echo "**Release linki:** https://github.com/darkmues/deneme1/releases/tag/debug-build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifacts** bölümünden de **CanSaati-APK** indirilebilir." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Kurulum" >> $GITHUB_STEP_SUMMARY
           echo "1. APK'yı Android cihazınıza aktarın" >> $GITHUB_STEP_SUMMARY

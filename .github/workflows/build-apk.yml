@@ -12,8 +12,23 @@ jobs:
     name: Android APK Build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
 
     steps:
+      - name: CI başladı bildirimi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 14,
+              body: `🔄 CI başladı — run [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+            });
+
       - name: Checkout
         uses: actions/checkout@v4
 

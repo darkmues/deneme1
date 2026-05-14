@@ -38,14 +38,6 @@
     },
     "plugins": [
       [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#C9A84C",
-          "sounds": ["./assets/bell.wav"]
-        }
-      ],
-      [
         "expo-av",
         {
           "microphonePermission": false

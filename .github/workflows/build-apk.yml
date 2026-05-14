@@ -48,12 +48,6 @@ jobs:
       - name: Gradlew izni ver
         run: chmod +x android/gradlew
 
-      - name: JCenter repo ekle (ShortcutBadger için)
-        run: |
-          sed -i "s|maven { url 'https://www.jitpack.io' }|maven { url 'https://www.jitpack.io' }\n        maven { url 'https://jcenter.bintray.com' }|" android/build.gradle
-          echo "Repositories after patch:"
-          grep -A2 "jitpack\|jcenter" android/build.gradle
-
       - name: Ortam bilgisi
         run: |
           echo "=== Bellek ==="

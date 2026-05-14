@@ -32,41 +32,21 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
 
     if (key === 'notifications') {
-      if (value) {
-        const granted = await notificationService.requestPermissions();
-        if (!granted) {
-          Alert.alert('İzin Gerekli', 'Bildirimler için ayarlardan izin verin.');
-          const prev = { ...next, notifications: false };
-          setSettings(prev);
-          await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(prev));
-          return;
-        }
-        await notificationService.scheduleCanonicalHours(true);
-      } else {
-        await notificationService.cancelAll();
-      }
+      Alert.alert('Yakında', 'Arka plan bildirimleri için Firebase kurulumu gerekiyor.');
+      const prev = { ...next, notifications: false };
+      setSettings(prev);
+      await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(prev));
     }
   };
 
   const testBell = () => bellService.ring(3);
 
   const resetAll = () => {
-    Alert.alert('Tüm Bildirimleri Sıfırla', 'Tüm zamanlanmış bildirimler iptal edilecek. Devam?', [
-      { text: 'İptal', style: 'cancel' },
-      { text: 'Sıfırla', style: 'destructive', onPress: async () => {
-        await notificationService.cancelAll();
-        Alert.alert('Sıfırlandı', 'Tüm bildirimler iptal edildi.');
-      }},
-    ]);
+    Alert.alert('Bildirimler', 'Arka plan bildirimleri henüz aktif değil.');
   };
 
   const reschedule = async () => {
-    const granted = await notificationService.requestPermissions();
-    if (!granted) {
-      Alert.alert('İzin Gerekli', 'Bildirimler için ayarlardan izin verin.');
-      return;
-    }
-    await notificationService.scheduleCanonicalHours(true);
+    Alert.alert('Yakında', 'Firebase kurulumu tamamlandığında bu özellik aktif olacak.');
     Alert.alert('Başarılı', '7 kanonlu saat bildirimi planlandı.');
   };
 

@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { geminiService } from '../services/geminiService';
+import { useAuth } from '../context/AuthContext';
 import LoadingDots from '../components/LoadingDots';
 import { colors, typography, spacing, borderRadius } from '../theme';
 
@@ -85,6 +86,7 @@ export default function WritingScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamedText, setStreamedText] = useState('');
   const [copyAnimation] = useState(new Animated.Value(0));
+  const { token } = useAuth();
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
 
@@ -104,7 +106,7 @@ export default function WritingScreen() {
     const fullPrompt = `Ton: ${toneLabel}\n\n${userInput}`;
 
     try {
-      await geminiService.streamText(fullPrompt + `\n\nYazım türü: ${currentTemplate.label}`, (chunk, full) => {
+      await geminiService.streamText(token, fullPrompt + `\n\nYazım türü: ${currentTemplate.label}`, (chunk, full) => {
         setStreamedText(full);
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
       });
@@ -113,7 +115,7 @@ export default function WritingScreen() {
     } catch (err) {
       // Streaming başarısız olursa normal istek dene
       try {
-        const result = await geminiService.generateText(fullPrompt, selectedTemplate);
+        const result = await geminiService.generateText(token, fullPrompt, selectedTemplate);
         setGeneratedText(result);
         setStreamedText(result);
       } catch (err2) {

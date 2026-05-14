@@ -15,6 +15,7 @@ import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { geminiService } from '../services/geminiService';
+import { useAuth } from '../context/AuthContext';
 import LoadingDots from '../components/LoadingDots';
 import { colors, typography, spacing, borderRadius } from '../theme';
 
@@ -34,6 +35,7 @@ export default function VoiceScreen() {
   const [conversation, setConversation] = useState([]);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
+  const { token } = useAuth();
   const recording = useRef(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
@@ -123,7 +125,7 @@ export default function VoiceScreen() {
 
   const getAIResponse = async (text) => {
     try {
-      const aiResponse = await geminiService.processVoiceText(text);
+      const aiResponse = await geminiService.processVoiceText(token, text);
       setResponse(aiResponse);
 
       setConversation((prev) => [

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import ChatScreen from '../screens/ChatScreen';
 import VoiceScreen from '../screens/VoiceScreen';
 import ImageScreen from '../screens/ImageScreen';
 import WritingScreen from '../screens/WritingScreen';
+import LoginScreen from '../screens/LoginScreen';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -31,7 +33,23 @@ const TabIcon = ({ name, focused, color }) => {
 };
 
 export default function AppNavigator() {
+  const { token, isLoading } = useAuth();
   const insets = useSafeAreaInsets();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LinearGradient colors={colors.gradientPrimary} style={styles.loadingLogo}>
+          <Ionicons name="sparkles" size={32} color="#fff" />
+        </LinearGradient>
+        <ActivityIndicator color={colors.primaryLight} size="large" style={{ marginTop: 24 }} />
+      </View>
+    );
+  }
+
+  if (!token) {
+    return <LoginScreen />;
+  }
 
   return (
     <NavigationContainer>
@@ -48,11 +66,7 @@ export default function AppNavigator() {
           },
           tabBarActiveTintColor: colors.primaryLight,
           tabBarInactiveTintColor: colors.textMuted,
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '600',
-            marginTop: 2,
-          },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
         }}
       >
         <Tab.Screen
@@ -105,6 +119,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 32,
     borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingLogo: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

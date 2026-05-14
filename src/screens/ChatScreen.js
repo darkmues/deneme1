@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { geminiService } from '../services/geminiService';
+import { useAuth } from '../context/AuthContext';
 import LoadingDots from '../components/LoadingDots';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
 
@@ -33,6 +34,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function ChatScreen() {
+  const { token, user, signOut } = useAuth();
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +69,7 @@ export default function ChatScreen() {
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({ role: m.role, text: m.text }));
 
-      const response = await geminiService.sendMessage(messageText, history);
+      const response = await geminiService.sendMessage(token, messageText, history);
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
@@ -158,9 +160,14 @@ export default function ChatScreen() {
               </View>
             </View>
           </View>
-          <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-            <Ionicons name="trash-outline" size={20} color="rgba(255,255,255,0.8)" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
+              <Ionicons name="trash-outline" size={18} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={signOut} style={styles.clearButton}>
+              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -277,10 +284,11 @@ const styles = StyleSheet.create({
   onlineIndicator: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4ade80' },
   onlineText: { fontSize: typography.fontSizes.xs, color: 'rgba(255,255,255,0.8)' },
+  headerActions: { flexDirection: 'row', gap: spacing.xs },
   clearButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',

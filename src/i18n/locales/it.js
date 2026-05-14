@@ -95,7 +95,7 @@ export default {
   reset_times_confirm: 'Ripristinare tutti gli orari di preghiera?',
   feast_christmas_eve: 'Vigilia di Natale',
   feast_st_stephen: 'Santo Stefano',
-  feast_easter_monday: 'Lunedì dell'Angelo',
+  feast_easter_monday: "Lunedì dell'Angelo",
   coming_soon: 'Prossimamente', coming_soon_msg: 'Questa funzione sarà disponibile presto.',
   bg_notifications_title: 'Notifiche', bg_notifications_msg: 'Notifiche pianificate.',
   notification_permission_title: 'Permesso Notifiche', notification_permission_msg: 'Permesso necessario per ricevere notifiche di preghiera.',

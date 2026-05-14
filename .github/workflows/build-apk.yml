@@ -1,0 +1,175 @@
+name: 🤖 Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - claude/session-5C8xJ
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build türü (debug / release)'
+        required: false
+        default: 'release'
+
+jobs:
+  build:
+    name: Android APK Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── Kaynak kodu al ──────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node.js ─────────────────────────────────────────────────────────────
+      - name: Node.js 20 kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── Java 17 (React Native için gerekli) ─────────────────────────────────
+      - name: Java 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── Android SDK ─────────────────────────────────────────────────────────
+      - name: Android SDK kur
+        uses: android-actions/setup-android@v3
+
+      - name: Android build-tools ve platform kur
+        run: |
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            --sdk_root=$ANDROID_SDK_ROOT
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+
+      # ── Bağımlılıklar ────────────────────────────────────────────────────────
+      - name: npm install
+        run: npm install --legacy-peer-deps
+
+      # ── Expo Prebuild (android/ klasörü oluştur) ────────────────────────────
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform android --no-install --clean
+        env:
+          EXPO_NO_DOTENV: '1'
+
+      - name: Gradlew izni ver
+        run: chmod +x android/gradlew
+
+      # ── Release için keystore oluştur ────────────────────────────────────────
+      - name: Keystore oluştur (CI imzası)
+        run: |
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "Kullanıcı keystore'u kullanılıyor..."
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+          else
+            echo "Yeni keystore oluşturuluyor (CI varsayılanı)..."
+            keytool -genkeypair -v \
+              -keystore android/app/release.keystore \
+              -alias aiasistan \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass aiasistan123 \
+              -keypass aiasistan123 \
+              -dname "CN=AI Asistan, OU=Mobile, O=App, L=Istanbul, ST=TR, C=TR"
+          fi
+
+      # ── Signing config'i ayarla ─────────────────────────────────────────────
+      - name: Gradle signing config yaz
+        run: |
+          KEY_ALIAS="${{ secrets.KEY_ALIAS || 'aiasistan' }}"
+          STORE_PASS="${{ secrets.STORE_PASSWORD || 'aiasistan123' }}"
+          KEY_PASS="${{ secrets.KEY_PASSWORD || 'aiasistan123' }}"
+
+          cat >> android/gradle.properties << EOF
+          MYAPP_RELEASE_STORE_FILE=release.keystore
+          MYAPP_RELEASE_KEY_ALIAS=${KEY_ALIAS}
+          MYAPP_RELEASE_STORE_PASSWORD=${STORE_PASS}
+          MYAPP_RELEASE_KEY_PASSWORD=${KEY_PASS}
+          EOF
+
+      # ── Signing config'i build.gradle'a ekle ───────────────────────────────
+      - name: build.gradle signing bloğu ekle
+        working-directory: android/app
+        run: |
+          python3 - << 'PYEOF'
+          import re
+
+          with open('build.gradle', 'r') as f:
+              content = f.read()
+
+          signing_config = """
+              signingConfigs {
+                  release {
+                      storeFile file(MYAPP_RELEASE_STORE_FILE)
+                      storePassword MYAPP_RELEASE_STORE_PASSWORD
+                      keyAlias MYAPP_RELEASE_KEY_ALIAS
+                      keyPassword MYAPP_RELEASE_KEY_PASSWORD
+                  }
+              }
+          """
+
+          if 'signingConfigs' not in content:
+              content = content.replace('android {', 'android {' + signing_config, 1)
+
+          # Release buildType'a signing ekle
+          content = re.sub(
+              r'(buildTypes\s*\{[^}]*release\s*\{)',
+              r'\1\n            signingConfig signingConfigs.release',
+              content
+          )
+
+          with open('build.gradle', 'w') as f:
+              f.write(content)
+
+          print("build.gradle güncellendi.")
+          PYEOF
+
+      # ── APK Build ───────────────────────────────────────────────────────────
+      - name: APK build et
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx4g'
+
+      # ── APK'yı bul ve yeniden adlandır ──────────────────────────────────────
+      - name: APK bilgisini göster
+        run: |
+          find android/app/build/outputs/apk -name "*.apk" | while read f; do
+            echo "APK: $f ($(du -sh "$f" | cut -f1))"
+          done
+
+      # ── Artifact olarak yükle ────────────────────────────────────────────────
+      - name: APK'yı artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Asistan-APK
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      # ── Release özeti ─────────────────────────────────────────────────────
+      - name: Build özeti
+        run: |
+          echo "## ✅ APK Build Başarılı!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 İndirme" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts bölümünden **AI-Asistan-APK** dosyasını indirin." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Kurulum" >> $GITHUB_STEP_SUMMARY
+          echo "1. APK dosyasını Android cihazınıza aktarın" >> $GITHUB_STEP_SUMMARY
+          echo "2. Ayarlar → Bilinmeyen kaynaklar → İzin ver" >> $GITHUB_STEP_SUMMARY
+          echo "3. APK dosyasına dokunun ve kurun" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔑 Kendi Keystore'unuzu Kullanmak İçin" >> $GITHUB_STEP_SUMMARY
+          echo "Repository Secrets'a şunu ekleyin:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`RELEASE_KEYSTORE_BASE64\`: \`base64 -i your.keystore\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`KEY_ALIAS\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`STORE_PASSWORD\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`KEY_PASSWORD\`" >> $GITHUB_STEP_SUMMARY

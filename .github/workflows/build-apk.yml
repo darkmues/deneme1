@@ -79,7 +79,7 @@ jobs:
 
       - name: android/gradle.properties yamaları
         run: |
-          echo "react.internal.disableJavaVersionAlignment=true" >> android/gradle.properties
+          echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
           echo "org.gradle.java.installations.paths=$JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.auto-download=false" >> android/gradle.properties
@@ -114,7 +114,6 @@ jobs:
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
             -Pandroid.kotlinVersion=1.9.24 \
-            -Preact.internal.disableJavaVersionAlignment=true \
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
         env:

@@ -16,7 +16,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { geminiService } from '../services/geminiService';
-import { useAuth } from '../context/AuthContext';
 import LoadingDots from '../components/LoadingDots';
 import { colors, typography, spacing, borderRadius } from '../theme';
 
@@ -36,7 +35,6 @@ export default function ImageScreen() {
   const [analysis, setAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState([]);
-  const { token } = useAuth();
   const insets = useSafeAreaInsets();
 
   const pickImage = async (source) => {
@@ -95,7 +93,6 @@ export default function ImageScreen() {
       const finalPrompt = customPrompt.trim() || modePrompt;
 
       const result = await geminiService.analyzeImage(
-        token,
         base64Data,
         'image/jpeg',
         finalPrompt

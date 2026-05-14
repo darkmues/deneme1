@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { notificationService } from '../services/notificationService';
+import { notificationService } from '../services/notificationService'; // stub — bildirimler devre dışı
 import { bellService } from '../services/bellService';
 import { colors, typography, spacing, borderRadius } from '../theme';
 

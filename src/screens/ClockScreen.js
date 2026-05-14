@@ -9,10 +9,7 @@ import { CANONICAL_HOURS } from '../data/prayers';
 import { bellService } from '../services/bellService';
 import BellAnimation from '../components/BellAnimation';
 import { colors, typography, spacing, borderRadius } from '../theme';
-
-const DAYS_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-const MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+import { useI18n } from '../i18n';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -40,6 +37,7 @@ export default function ClockScreen() {
   const [ringing, setRinging] = useState(false);
   const [prayerModal, setPrayerModal] = useState(null);
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -67,55 +65,51 @@ export default function ClockScreen() {
     setRinging(false);
   }, []);
 
+  const localeDateStr = now.toLocaleDateString(locale, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header gradient strip */}
       <LinearGradient colors={['#0D0D1A', '#13131F']} style={styles.header}>
-        <Text style={styles.headerTitle}>✝ Çan Saati</Text>
-        <Text style={styles.headerSub}>Hristiyan Dua Takvimi</Text>
+        <Text style={styles.headerTitle}>{t('app_name')}</Text>
+        <Text style={styles.headerSub}>{t('subtitle')}</Text>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Big clock card */}
         <LinearGradient colors={['#1C1C2E', '#13131F']} style={styles.clockCard}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
           <View style={styles.goldBorder} />
-
-          <Text style={styles.dateText}>
-            {DAYS_TR[now.getDay()]}, {now.getDate()} {MONTHS_TR[now.getMonth()]} {now.getFullYear()}
-          </Text>
+          <Text style={styles.dateText}>{localeDateStr}</Text>
           <Text style={styles.clockText}>
             {pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
           </Text>
-
           <TouchableOpacity onPress={ringManually} activeOpacity={0.7} style={styles.bellButton}>
             <BellAnimation ringing={ringing} size={52} />
-            <Text style={styles.bellHint}>Çalmak için dokun</Text>
+            <Text style={styles.bellHint}>{t('tap_to_ring')}</Text>
           </TouchableOpacity>
         </LinearGradient>
 
-        {/* Next prayer */}
         <View style={styles.nextCard}>
           <LinearGradient colors={[nextHour.color + '22', nextHour.color + '08']}
             style={styles.nextCardInner}>
             <View style={styles.nextRow}>
               <Text style={styles.nextIcon}>{nextHour.icon}</Text>
               <View style={styles.nextInfo}>
-                <Text style={styles.nextLabel}>Sonraki Dua Saati</Text>
+                <Text style={styles.nextLabel}>{t('next_prayer')}</Text>
                 <Text style={[styles.nextName, { color: nextHour.color }]}>
-                  {nextHour.turkishName} • {nextHour.time}
+                  {t(`hours.${nextHour.id}.name`)} • {nextHour.time}
                 </Text>
               </View>
               <View style={styles.countdownBox}>
-                <Text style={styles.countdownLabel}>Kalan</Text>
+                <Text style={styles.countdownLabel}>{t('remaining')}</Text>
                 <Text style={[styles.countdown, { color: nextHour.color }]}>{countdown}</Text>
               </View>
             </View>
           </LinearGradient>
         </View>
 
-        {/* Today's schedule */}
-        <Text style={styles.sectionTitle}>BUGÜNÜN PROGRAMI</Text>
+        <Text style={styles.sectionTitle}>{t('todays_schedule')}</Text>
         {CANONICAL_HOURS.map(hour => {
           const passed = now.getHours() * 60 + now.getMinutes() > hour.hour * 60 + hour.minute;
           const isNext = hour.id === nextHour.id;
@@ -128,7 +122,7 @@ export default function ClockScreen() {
                 <Text style={[styles.hourIcon, passed && !isNext && styles.passed]}>{hour.icon}</Text>
                 <View style={styles.hourInfo}>
                   <Text style={[styles.hourName, passed && !isNext && styles.passed]}>
-                    {hour.turkishName}
+                    {t(`hours.${hour.id}.name`)}
                   </Text>
                   <Text style={styles.hourLatin}>{hour.latinName}</Text>
                 </View>
@@ -146,23 +140,24 @@ export default function ClockScreen() {
         <View style={{ height: insets.bottom + spacing.xxl }} />
       </ScrollView>
 
-      {/* Prayer modal */}
       <Modal visible={!!prayerModal} transparent animationType="slide" onRequestClose={() => setPrayerModal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <LinearGradient colors={['#1C1C2E', '#0D0D1A']} style={styles.modalInner}>
               <Text style={styles.modalIcon}>{prayerModal?.icon}</Text>
               <Text style={[styles.modalTitle, { color: prayerModal?.color || colors.primary }]}>
-                {prayerModal?.turkishName}
+                {prayerModal ? t(`hours.${prayerModal.id}.name`) : ''}
               </Text>
               <Text style={styles.modalLatin}>{prayerModal?.latinName} • {prayerModal?.time}</Text>
               <View style={styles.modalDivider} />
               <ScrollView style={styles.modalScroll}>
-                <Text style={styles.modalPrayer}>{prayerModal?.prayer}</Text>
+                <Text style={styles.modalPrayer}>
+                  {prayerModal ? t(`hours.${prayerModal.id}.prayer`) : ''}
+                </Text>
               </ScrollView>
               <TouchableOpacity style={styles.modalClose} onPress={() => setPrayerModal(null)}>
                 <LinearGradient colors={colors.gradientGold} style={styles.modalCloseGrad}>
-                  <Text style={styles.modalCloseText}>Kapat</Text>
+                  <Text style={styles.modalCloseText}>{t('close')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </LinearGradient>
@@ -179,14 +174,12 @@ const styles = StyleSheet.create({
   headerTitle:  { fontSize: typography.fontSizes.xl, fontWeight: typography.fontWeights.bold, color: colors.primary },
   headerSub:    { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2 },
   scroll:       { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-
   clockCard:    { borderRadius: borderRadius.xl, padding: spacing.xl, alignItems: 'center', marginBottom: spacing.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   goldBorder:   { position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.primary },
-  dateText:     { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginBottom: spacing.sm },
+  dateText:     { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginBottom: spacing.sm, textAlign: 'center' },
   clockText:    { fontSize: 60, fontWeight: typography.fontWeights.heavy, color: colors.primary, fontVariant: ['tabular-nums'], letterSpacing: 4 },
   bellButton:   { alignItems: 'center', marginTop: spacing.lg, gap: spacing.xs },
   bellHint:     { fontSize: typography.fontSizes.xs, color: colors.textMuted },
-
   nextCard:     { marginBottom: spacing.lg, borderRadius: borderRadius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   nextCardInner: { padding: spacing.md },
   nextRow:      { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -197,9 +190,7 @@ const styles = StyleSheet.create({
   countdownBox: { alignItems: 'flex-end' },
   countdownLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted },
   countdown:    { fontSize: typography.fontSizes.lg, fontWeight: typography.fontWeights.bold, fontVariant: ['tabular-nums'] },
-
   sectionTitle: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontWeight: typography.fontWeights.semibold, letterSpacing: 1, marginBottom: spacing.sm, textTransform: 'uppercase' },
-
   hourRow:      { marginBottom: spacing.sm },
   hourRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.border },
   hourIcon:     { fontSize: 22 },
@@ -211,7 +202,6 @@ const styles = StyleSheet.create({
   angelusTag:   { fontSize: 9, color: colors.primary, fontWeight: typography.fontWeights.bold, letterSpacing: 0.5 },
   chevron:      { marginLeft: spacing.xs },
   passed:       { opacity: 0.35 },
-
   modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
   modalCard:    { borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, overflow: 'hidden', maxHeight: '80%' },
   modalInner:   { padding: spacing.xl },

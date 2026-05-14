@@ -63,29 +63,54 @@ jobs:
           echo "=== Gradle wrapper ==="
           cat android/gradle/wrapper/gradle-wrapper.properties | grep distributionUrl
 
+      - name: Gradle versiyon kontrol
+        working-directory: android
+        run: ./gradlew --version
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx4g -XX:MaxMetaspaceSize=512m'
+          JAVA_OPTS: '-Xmx2g'
+
       - name: APK build et (Debug)
         working-directory: android
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            -PreactNativeArchitectures=arm64-v8a \
+            2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
         env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Xmx4g -XX:MaxMetaspaceSize=512m'
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Xmx4g -XX:MaxMetaspaceSize=512m'
           JAVA_OPTS: '-Xmx2g'
 
       - name: Hata logunu göster
         if: failure()
         run: |
+          echo "=== İlk 100 satır ==="
+          head -100 /tmp/gradle-build.log || true
           echo "=== Son 200 satır ==="
           tail -200 /tmp/gradle-build.log || true
           echo "=== EXCEPTION içeren satırlar ==="
-          grep -i "exception\|error\|failed\|could not" /tmp/gradle-build.log | tail -50 || true
+          grep -i "exception\|error\|failed\|could not\|cannot" /tmp/gradle-build.log | tail -50 || true
 
       - name: Hata özetini Step Summary'e yaz
         if: failure()
         run: |
           echo "## ❌ Gradle Build Hatası" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### İlk 80 satır (başlangıç hataları için)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -100 /tmp/gradle-build.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Log dosyası bulunamadı"
+          head -80 /tmp/gradle-build.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Log dosyası bulunamadı"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Son 120 satır" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -120 /tmp/gradle-build.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Hata satırları" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -i "exception\|error\|failed\|could not\|cannot" /tmp/gradle-build.log | head -30 >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Gradle log artifact (hata durumunda)

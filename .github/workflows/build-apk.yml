@@ -57,9 +57,19 @@ jobs:
           sed -i '/foojay-resolver-convention/d' node_modules/@react-native/gradle-plugin/settings.gradle.kts
           find node_modules/@react-native/gradle-plugin -name "*.gradle.kts" \
             -exec sed -i '/jvmToolchain/d' {} +
+          echo "=== jvmToolchain kalan ==="
+          grep -r "jvmToolchain" node_modules/@react-native/gradle-plugin/ --include="*.gradle.kts" || echo "Temiz — jvmToolchain kalmadi"
           echo "JAVA_HOME=$JAVA_HOME"
-          echo "Toolchain config:"
           cat ~/.gradle/gradle.properties
+
+      - name: android/gradle.properties yamaları
+        run: |
+          echo "react.internal.disableJavaVersionAlignment=true" >> android/gradle.properties
+          echo "org.gradle.java.installations.paths=$JAVA_HOME" >> android/gradle.properties
+          echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> android/gradle.properties
+          echo "org.gradle.java.installations.auto-download=false" >> android/gradle.properties
+          echo "=== android/gradle.properties son satirlar ==="
+          tail -6 android/gradle.properties
 
       - name: Ortam bilgisi
         run: |
@@ -71,8 +81,6 @@ jobs:
           java -version
           echo "=== NDK ==="
           ls $ANDROID_HOME/ndk/ 2>/dev/null || echo "NDK dizini bulunamadi"
-          echo "=== ANDROID_HOME ==="
-          echo $ANDROID_HOME
           echo "=== Gradle wrapper ==="
           cat android/gradle/wrapper/gradle-wrapper.properties | grep distributionUrl
 
@@ -91,6 +99,7 @@ jobs:
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
             -Pandroid.kotlinVersion=1.9.24 \
+            -Preact.internal.disableJavaVersionAlignment=true \
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
         env:
@@ -99,37 +108,36 @@ jobs:
 
       - name: Hata logunu PR yorumu olarak yaz
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            printf '## Build Hatasi Log\n```\n'
-            printf '=== NPM INSTALL (son 50 satir) ===\n'
-            tail -50 /tmp/npm-install.log 2>/dev/null || printf 'no npm log\n'
-            printf '\n=== EXPO PREBUILD ===\n'
-            cat /tmp/expo-prebuild.log 2>/dev/null || printf 'no expo log\n'
-            printf '\n=== GRADLEW VERSION ===\n'
-            cat /tmp/gradlew-version.log 2>/dev/null || printf 'no gradlew-version log\n'
-            printf '\n=== GRADLE BUILD (son 300 satir) ===\n'
-            tail -300 /tmp/gradle-build.log 2>/dev/null || printf 'no gradle build log\n'
-            printf '\n```\n'
-          } > /tmp/error-comment.md
-          PR=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number' 2>/dev/null || true)
-          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
-            gh pr comment "$PR" --body-file /tmp/error-comment.md
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readFileSync } = require('fs');
+            const logs = [
+              ['/tmp/npm-install.log', 'NPM Install (son 50 satir)', 50],
+              ['/tmp/expo-prebuild.log', 'Expo Prebuild', 300],
+              ['/tmp/gradlew-version.log', 'Gradlew Version', 100],
+              ['/tmp/gradle-build.log', 'Gradle Build (son 400 satir)', 400],
+            ];
+            let body = '## ❌ Build Hatası\n```\n';
+            for (const [path, name, lines] of logs) {
+              body += `\n=== ${name} ===\n`;
+              try {
+                const content = readFileSync(path, 'utf8');
+                const lineArr = content.split('\n');
+                body += lineArr.slice(-lines).join('\n');
+              } catch(e) {
+                body += 'log yok';
+              }
+            }
+            body += '\n```';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 14,
+              body: body.slice(0, 65000)
+            });
 
-      - name: Hata özetini Step Summary'e yaz
-        if: failure()
-        run: |
-          echo "## ❌ Build Hatası" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat /tmp/expo-prebuild.log 2>/dev/null | tail -50 >> $GITHUB_STEP_SUMMARY || true
-          cat /tmp/gradlew-version.log 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
-          cat /tmp/gradle-build.log 2>/dev/null | tail -200 >> $GITHUB_STEP_SUMMARY || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Gradle log artifact (hata durumunda)
+      - name: CI log artifact
         if: failure()
         uses: actions/upload-artifact@v4
         with:

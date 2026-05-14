@@ -55,9 +55,12 @@ jobs:
           echo "org.gradle.java.installations.auto-download=false" >> ~/.gradle/gradle.properties
           # foojay-resolver CI ortamında engellidir — included build'den kaldır
           sed -i '/foojay-resolver-convention/d' node_modules/@react-native/gradle-plugin/settings.gradle.kts
-          echo "Toolchain ayarı OK:"
-          cat ~/.gradle/gradle.properties
+          # jvmToolchain(17) CI'da Gradle'ın Java 17'yi bulamamasına neden olur
+          find node_modules/@react-native/gradle-plugin -name "*.gradle.kts" \
+            -exec sed -i 's/kotlin { jvmToolchain(17) }/\/\/ jvmToolchain patched for CI/g' {} +
           echo "JAVA_HOME=$JAVA_HOME"
+          echo "Toolchain config:"
+          cat ~/.gradle/gradle.properties
 
       - name: Ortam bilgisi
         run: |

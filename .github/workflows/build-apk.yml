@@ -52,8 +52,22 @@ jobs:
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;26.1.10909125"
 
-      - name: npm install
-        run: npm install --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
+      - name: npm ci
+        run: npm ci --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
+
+      - name: react-native-screens StateWrapper yaması
+        run: |
+          SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version")
+          echo "react-native-screens sürümü: $SCREEN_VER"
+          KT=node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
+          if [ -f "$KT" ]; then
+            # setStateWrapper(stateWrapper) → setStateWrapper(stateWrapper!!) (3.x uyumluluk)
+            sed -i 's/setStateWrapper(stateWrapper)/setStateWrapper(stateWrapper!!)/g' "$KT"
+            # updateState override parametresini nullable yap
+            sed -i 's/stateWrapper: StateWrapper)/stateWrapper: StateWrapper?)/g' "$KT"
+            echo "=== StateWrapper satırları ==="
+            grep -n "StateWrapper\|setStateWrapper" "$KT"
+          fi
 
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean 2>&1 | tee /tmp/expo-prebuild.log; exit ${PIPESTATUS[0]}

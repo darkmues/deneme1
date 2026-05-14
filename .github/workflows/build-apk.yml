@@ -184,3 +184,4 @@ jobs:
           echo "1. APK'yı Android cihazınıza aktarın" >> $GITHUB_STEP_SUMMARY
           echo "2. Ayarlar → Bilinmeyen kaynaklar → İzin ver" >> $GITHUB_STEP_SUMMARY
           echo "3. APK dosyasına dokunun ve kurun" >> $GITHUB_STEP_SUMMARY
+

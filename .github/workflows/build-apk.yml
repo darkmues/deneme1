@@ -12,8 +12,23 @@ jobs:
     name: Android APK Build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
 
     steps:
+      - name: CI başladı bildirimi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 14,
+              body: `🔄 CI başladı — run [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+            });
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -38,10 +53,10 @@ jobs:
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;26.1.10909125"
 
       - name: npm install
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps 2>&1 | tee /tmp/npm-install.log; exit ${PIPESTATUS[0]}
 
       - name: Expo Prebuild
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform android --clean 2>&1 | tee /tmp/expo-prebuild.log; exit ${PIPESTATUS[0]}
         env:
           EXPO_NO_TELEMETRY: '1'
 
@@ -52,15 +67,24 @@ jobs:
         run: |
           mkdir -p ~/.gradle
           echo "org.gradle.java.installations.paths=$JAVA_HOME" >> ~/.gradle/gradle.properties
+          echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> ~/.gradle/gradle.properties
           echo "org.gradle.java.installations.auto-download=false" >> ~/.gradle/gradle.properties
-          # foojay-resolver CI ortamında engellidir — included build'den kaldır
           sed -i '/foojay-resolver-convention/d' node_modules/@react-native/gradle-plugin/settings.gradle.kts
-          # jvmToolchain(17) CI'da Gradle'ın Java 17'yi bulamamasına neden olur
           find node_modules/@react-native/gradle-plugin -name "*.gradle.kts" \
-            -exec sed -i 's/kotlin { jvmToolchain(17) }/\/\/ jvmToolchain patched for CI/g' {} +
+            -exec sed -i '/jvmToolchain/d' {} +
+          echo "=== jvmToolchain kalan ==="
+          grep -r "jvmToolchain" node_modules/@react-native/gradle-plugin/ --include="*.gradle.kts" || echo "Temiz — jvmToolchain kalmadi"
           echo "JAVA_HOME=$JAVA_HOME"
-          echo "Toolchain config:"
           cat ~/.gradle/gradle.properties
+
+      - name: android/gradle.properties yamaları
+        run: |
+          echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+          echo "org.gradle.java.installations.paths=$JAVA_HOME" >> android/gradle.properties
+          echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> android/gradle.properties
+          echo "org.gradle.java.installations.auto-download=false" >> android/gradle.properties
+          echo "=== android/gradle.properties son satirlar ==="
+          tail -6 android/gradle.properties
 
       - name: Ortam bilgisi
         run: |
@@ -72,14 +96,12 @@ jobs:
           java -version
           echo "=== NDK ==="
           ls $ANDROID_HOME/ndk/ 2>/dev/null || echo "NDK dizini bulunamadi"
-          echo "=== ANDROID_HOME ==="
-          echo $ANDROID_HOME
           echo "=== Gradle wrapper ==="
           cat android/gradle/wrapper/gradle-wrapper.properties | grep distributionUrl
 
       - name: Gradle versiyon kontrol
         working-directory: android
-        run: ./gradlew --version
+        run: ./gradlew --version 2>&1 | tee /tmp/gradlew-version.log; exit ${PIPESTATUS[0]}
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx4g -XX:MaxMetaspaceSize=512m'
           JAVA_OPTS: '-Xmx2g'
@@ -98,44 +120,47 @@ jobs:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Xmx4g -XX:MaxMetaspaceSize=512m'
           JAVA_OPTS: '-Xmx2g'
 
-      - name: Hata logunu göster
+      - name: Hata logunu PR yorumu olarak yaz
         if: failure()
-        run: |
-          echo "=== İlk 100 satır ==="
-          head -100 /tmp/gradle-build.log || true
-          echo "=== Son 200 satır ==="
-          tail -200 /tmp/gradle-build.log || true
-          echo "=== EXCEPTION içeren satırlar ==="
-          grep -i "exception\|error\|failed\|could not\|cannot" /tmp/gradle-build.log | tail -50 || true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readFileSync } = require('fs');
+            const logs = [
+              ['/tmp/npm-install.log', 'NPM Install (son 50 satir)', 50],
+              ['/tmp/expo-prebuild.log', 'Expo Prebuild', 300],
+              ['/tmp/gradlew-version.log', 'Gradlew Version', 100],
+              ['/tmp/gradle-build.log', 'Gradle Build (son 400 satir)', 400],
+            ];
+            let body = '## ❌ Build Hatası\n```\n';
+            for (const [path, name, lines] of logs) {
+              body += `\n=== ${name} ===\n`;
+              try {
+                const content = readFileSync(path, 'utf8');
+                const lineArr = content.split('\n');
+                body += lineArr.slice(-lines).join('\n');
+              } catch(e) {
+                body += 'log yok';
+              }
+            }
+            body += '\n```';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 14,
+              body: body.slice(0, 65000)
+            });
 
-      - name: Hata özetini Step Summary'e yaz
-        if: failure()
-        run: |
-          echo "## ❌ Gradle Build Hatası" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tam Gradle Logu" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat /tmp/gradle-build.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Log dosyası bulunamadı — assembleDebug başlamadı"
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Hata logunu repoya yaz
-        if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config user.email "ci@github.com"
-          git config user.name "CI Bot"
-          cp /tmp/gradle-build.log ci-gradle-error.txt 2>/dev/null || echo "Log yok" > ci-gradle-error.txt
-          git add ci-gradle-error.txt
-          git commit -m "ci: hata logu [skip ci]" || true
-          git push origin HEAD:${{ github.ref_name }} || true
-
-      - name: Gradle log artifact (hata durumunda)
+      - name: CI log artifact
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-error-log
-          path: /tmp/gradle-build.log
+          name: ci-error-logs
+          path: |
+            /tmp/npm-install.log
+            /tmp/expo-prebuild.log
+            /tmp/gradlew-version.log
+            /tmp/gradle-build.log
           retention-days: 3
 
       - name: APK bilgisini göster

@@ -107,10 +107,18 @@ jobs:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx4g -XX:MaxMetaspaceSize=512m'
           JAVA_OPTS: '-Xmx2g'
 
-      - name: APK build et (Debug)
+      - name: Release build icin debug keystore ayarla
+        run: |
+          # Expo prebuild'in urettigi build.gradle'da release genellikle debug keystore kullanir
+          # Kesin emin olmak icin signingConfigs.release -> signingConfigs.debug yap
+          sed -i 's/signingConfig signingConfigs\.release/signingConfig signingConfigs.debug/g' android/app/build.gradle
+          echo "=== signingConfig satirlari ==="
+          grep -n "signingConfig" android/app/build.gradle || echo "signingConfig yok"
+
+      - name: APK build et (Release)
         working-directory: android
         run: |
-          ./gradlew assembleDebug \
+          ./gradlew assembleRelease \
             --no-daemon \
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
@@ -171,7 +179,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CanSaati-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: GitHub Release olarak yayınla
@@ -179,7 +187,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          APK=android/app/build/outputs/apk/release/app-release.apk
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
           # Eski debug-build release'i sil (varsa)
           gh release delete debug-build --yes 2>/dev/null || true

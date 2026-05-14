@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "AI Asistan",
+    "slug": "ai-mobile-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0F1E"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aiassistant.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Ses tanıma için mikrofon erişimi gereklidir.",
+        "NSPhotoLibraryUsageDescription": "Görüntü analizi için fotoğraf galerisi erişimi gereklidir.",
+        "NSCameraUsageDescription": "Görüntü analizi için kamera erişimi gereklidir."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0F1E"
+      },
+      "package": "com.aiassistant.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Ses tanıma için mikrofon erişimi gereklidir."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Görüntü analizi için fotoğraf galerisi erişimi gereklidir.",
+          "cameraPermission": "Görüntü analizi için kamera erişimi gereklidir."
+        }
+      ]
+    ]
+  }
+}

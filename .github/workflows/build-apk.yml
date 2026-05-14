@@ -83,8 +83,9 @@ jobs:
           echo "org.gradle.java.installations.paths=$JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.fromEnv=JAVA_HOME" >> android/gradle.properties
           echo "org.gradle.java.installations.auto-download=false" >> android/gradle.properties
+          echo "bundleInDebug=true" >> android/gradle.properties
           echo "=== android/gradle.properties son satirlar ==="
-          tail -6 android/gradle.properties
+          tail -7 android/gradle.properties
 
       - name: Ortam bilgisi
         run: |

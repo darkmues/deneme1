@@ -48,6 +48,12 @@ jobs:
       - name: Gradlew izni ver
         run: chmod +x android/gradlew
 
+      - name: Gradle Java toolchain yolu ayarla
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.java.installations.paths=$JAVA_HOME" >> ~/.gradle/gradle.properties
+          echo "org.gradle.java.installations.auto-download=false" >> ~/.gradle/gradle.properties
+
       - name: Ortam bilgisi
         run: |
           echo "=== Bellek ==="

@@ -50,9 +50,23 @@ jobs:
 
       - name: APK build et (Debug)
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          exit ${PIPESTATUS[0]}
         env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Xmx3g'
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Xmx4g -XX:MaxMetaspaceSize=512m'
+
+      - name: Hata logunu göster
+        if: failure()
+        run: tail -150 /tmp/gradle-build.log || true
+
+      - name: Gradle log artifact (hata durumunda)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-error-log
+          path: /tmp/gradle-build.log
+          retention-days: 3
 
       - name: APK bilgisini göster
         run: find android/app/build/outputs/apk -name "*.apk" -exec du -sh {} \;

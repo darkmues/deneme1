@@ -77,6 +77,7 @@ jobs:
             --no-daemon \
             --stacktrace \
             -PreactNativeArchitectures=arm64-v8a \
+            -Pandroid.kotlinVersion=1.9.24 \
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
         env:

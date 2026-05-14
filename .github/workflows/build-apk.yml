@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - claude/session-5C8xJ
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -22,12 +25,24 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `🔄 CI başladı — run [${context.runId}](${runUrl})`;
+            // issue #14'e yaz
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: 14,
-              body: `🔄 CI başladı — run [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+              body
             });
+            // PR üzerinden tetiklendiyse PR'a da yaz
+            if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body
+              });
+            }
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -189,12 +204,21 @@ PYEOF
               }
             }
             body += '\n```';
+            const truncated = body.slice(0, 65000);
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: 14,
-              body: body.slice(0, 65000)
+              body: truncated
             });
+            if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: truncated
+              });
+            }
 
       - name: CI log artifact
         if: failure()

@@ -86,23 +86,21 @@ jobs:
           if [ -f "$KT" ]; then
             SCREEN_VER=$(node -p "require('./node_modules/react-native-screens/package.json').version")
             echo "react-native-screens sürümü: $SCREEN_VER"
-            python3 - <<'PYEOF'
-import re, sys
-kt = 'node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt'
-with open(kt) as f:
-    src = f.read()
-orig = src
-# Fix: setStateWrapper nullable argument
-src = src.replace('setStateWrapper(stateWrapper)', 'setStateWrapper(stateWrapper!!)')
-# Fix: ensure override uses nullable StateWrapper param
-src = re.sub(r'(stateWrapper\s*:\s*StateWrapper)\b(?!\?)', r'\1?', src)
-if src != orig:
-    with open(kt, 'w') as f:
-        f.write(src)
-    print('✅ ScreenViewManager.kt yamalandı')
-else:
-    print('ℹ️  Yama gerekmedi (zaten uyumlu)')
-PYEOF
+            python3 -c "
+          import re
+          kt = '$KT'
+          with open(kt) as f:
+              src = f.read()
+          orig = src
+          src = src.replace('setStateWrapper(stateWrapper)', 'setStateWrapper(stateWrapper!!)')
+          src = re.sub(r'(stateWrapper\s*:\s*StateWrapper)\b(?!\?)', r'\1?', src)
+          if src != orig:
+              with open(kt, 'w') as f:
+                  f.write(src)
+              print('yamalandı')
+          else:
+              print('yama gerekmedi')
+          "
             grep -n "StateWrapper\|setStateWrapper" "$KT"
           fi
 

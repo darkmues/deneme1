@@ -7,6 +7,7 @@ import { bellService } from '../services/bellService';
 import { useTheme, typography, spacing, borderRadius } from '../theme';
 import { useI18n } from '../i18n';
 import { usePrayerHours } from '../context/PrayerHoursContext';
+import { useDenomination } from '../context/DenominationContext';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -18,6 +19,11 @@ export default function HoursScreen() {
   const { colors } = useTheme();
   const { t } = useI18n();
   const { hours, updateHour, resetHours } = usePrayerHours();
+  const { denomination } = useDenomination();
+  const isCatholic = !denomination || denomination === 'catholic';
+  const sectionTitleKey = denomination === 'orthodox' ? 'orthodox_hours_section'
+    : denomination === 'protestant' ? 'protestant_hours_section'
+    : 'seven_canonical';
   const S = useMemo(() => makeStyles(colors), [colors]);
 
   const openEditTime = (h) => setEditTimeHour({ hour: h, hVal: pad(h.hour), mVal: pad(h.minute) });
@@ -41,20 +47,22 @@ export default function HoursScreen() {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={S.scroll}>
-        {/* Angelus button */}
-        <TouchableOpacity onPress={() => setShowAngelus(true)} activeOpacity={0.8}>
-          <LinearGradient colors={colors.gradientGold} style={S.angelusButton}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={S.angelusIcon}>🙏</Text>
-            <View style={S.angelusText}>
-              <Text style={[S.angelusTitle, { color: colors.isDark ? '#000' : '#fff' }]}>{t('angelus_prayer')}</Text>
-              <Text style={[S.angelusSub, { color: colors.isDark ? '#00000088' : '#ffffff88' }]}>{t('angelus_read_full')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.isDark ? '#000' : '#fff'} />
-          </LinearGradient>
-        </TouchableOpacity>
+        {/* Angelus button — only Catholic */}
+        {isCatholic && (
+          <TouchableOpacity onPress={() => setShowAngelus(true)} activeOpacity={0.8}>
+            <LinearGradient colors={colors.gradientGold} style={S.angelusButton}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <Text style={S.angelusIcon}>🙏</Text>
+              <View style={S.angelusText}>
+                <Text style={[S.angelusTitle, { color: colors.isDark ? '#000' : '#fff' }]}>{t('angelus_prayer')}</Text>
+                <Text style={[S.angelusSub, { color: colors.isDark ? '#00000088' : '#ffffff88' }]}>{t('angelus_read_full')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.isDark ? '#000' : '#fff'} />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
-        <Text style={S.sectionTitle}>{t('seven_canonical')}</Text>
+        <Text style={S.sectionTitle}>{t(sectionTitleKey)}</Text>
 
         {hours.map((hour, idx) => (
           <TouchableOpacity key={hour.id} onPress={() => setSelected(hour)} activeOpacity={0.8} style={S.card}>

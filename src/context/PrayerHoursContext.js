@@ -1,40 +1,51 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CANONICAL_HOURS } from '../data/prayers';
+import { getHoursForDenomination } from '../data/prayers';
+import { useDenomination } from './DenominationContext';
 
-const STORAGE_KEY = '@customHours_v1';
-const PrayerHoursContext = createContext({ hours: CANONICAL_HOURS, updateHour: () => {}, resetHours: () => {} });
+function storageKey(denomination) {
+  return `@customHours_${denomination || 'catholic'}_v1`;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+const PrayerHoursContext = createContext({ hours: [], updateHour: () => {}, resetHours: () => {} });
 
 export function PrayerHoursProvider({ children }) {
-  const [hours, setHours] = useState(CANONICAL_HOURS);
+  const { denomination } = useDenomination();
+  const [hours, setHours] = useState(() => getHoursForDenomination(denomination));
+  const prevDenom = useRef(denomination);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then(raw => {
-      if (!raw) return;
+    const base = getHoursForDenomination(denomination);
+    AsyncStorage.getItem(storageKey(denomination)).then(raw => {
+      if (!raw) { setHours(base); return; }
       try {
         const overrides = JSON.parse(raw);
-        setHours(CANONICAL_HOURS.map(h => {
+        setHours(base.map(h => {
           const ov = overrides[h.id];
           if (!ov) return h;
-          return { ...h, hour: ov.hour, minute: ov.minute, time: `${String(ov.hour).padStart(2,'0')}:${String(ov.minute).padStart(2,'0')}` };
+          return { ...h, hour: ov.hour, minute: ov.minute, time: `${pad2(ov.hour)}:${pad2(ov.minute)}` };
         }));
-      } catch {}
+      } catch { setHours(base); }
     });
-  }, []);
+    prevDenom.current = denomination;
+  }, [denomination]);
 
   const updateHour = async (id, hour, minute) => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
+    const key = storageKey(denomination);
+    const raw = await AsyncStorage.getItem(key).catch(() => null);
     const overrides = raw ? JSON.parse(raw) : {};
     overrides[id] = { hour, minute };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+    await AsyncStorage.setItem(key, JSON.stringify(overrides));
     setHours(prev => prev.map(h => h.id === id
-      ? { ...h, hour, minute, time: `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}` }
+      ? { ...h, hour, minute, time: `${pad2(hour)}:${pad2(minute)}` }
       : h));
   };
 
   const resetHours = async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    setHours(CANONICAL_HOURS);
+    await AsyncStorage.removeItem(storageKey(denomination));
+    setHours(getHoursForDenomination(denomination));
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal,
   TextInput, Switch, Alert,
@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { notificationService } from '../services/notificationService';
 import { bellService } from '../services/bellService';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { useTheme, typography, spacing, borderRadius } from '../theme';
 import { useI18n } from '../i18n';
 
 const STORAGE_KEY = '@reminders_v1';
@@ -25,6 +25,8 @@ export default function RemindersScreen() {
   const [repeat, setRepeat] = useState(true);
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const S = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => { load(); }, []);
 
@@ -94,52 +96,52 @@ export default function RemindersScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <LinearGradient colors={['#0D0D1A', '#13131F']} style={styles.header}>
-        <Text style={styles.headerTitle}>{t('reminders_title')}</Text>
-        <Text style={styles.headerSub}>{t('reminders_subtitle')}</Text>
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      <LinearGradient colors={colors.gradientNight} style={S.header}>
+        <Text style={S.headerTitle}>{t('reminders_title')}</Text>
+        <Text style={S.headerSub}>{t('reminders_subtitle')}</Text>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <TouchableOpacity onPress={openNew} activeOpacity={0.8} style={styles.addButton}>
-          <LinearGradient colors={colors.gradientGold} style={styles.addButtonInner}
+      <ScrollView contentContainerStyle={S.scroll}>
+        <TouchableOpacity onPress={openNew} activeOpacity={0.8} style={S.addButton}>
+          <LinearGradient colors={colors.gradientGold} style={S.addButtonInner}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Ionicons name="add-circle" size={22} color="#000" />
-            <Text style={styles.addButtonText}>{t('add_reminder')}</Text>
+            <Ionicons name="add-circle" size={22} color={colors.isDark ? '#000' : '#fff'} />
+            <Text style={S.addButtonText}>{t('add_reminder')}</Text>
           </LinearGradient>
         </TouchableOpacity>
 
         {reminders.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🔕</Text>
-            <Text style={styles.emptyText}>{t('no_reminders')}</Text>
-            <Text style={styles.emptySub}>{t('no_reminders_sub')}</Text>
+          <View style={S.empty}>
+            <Text style={S.emptyIcon}>🔕</Text>
+            <Text style={S.emptyText}>{t('no_reminders')}</Text>
+            <Text style={S.emptySub}>{t('no_reminders_sub')}</Text>
           </View>
         ) : (
           reminders.map(item => (
-            <View key={item.id} style={styles.reminderCard}>
+            <View key={item.id} style={S.reminderCard}>
               <LinearGradient
-                colors={item.enabled ? [colors.primaryFaint, '#1C1C2E'] : ['#1C1C2E', '#1C1C2E']}
-                style={styles.reminderInner}>
-                <View style={styles.reminderLeft}>
-                  <Text style={[styles.reminderTime, { color: item.enabled ? colors.primary : colors.textMuted }]}>
+                colors={item.enabled ? [colors.primaryFaint, colors.surfaceElevated] : [colors.surfaceElevated, colors.surfaceElevated]}
+                style={S.reminderInner}>
+                <View style={S.reminderLeft}>
+                  <Text style={[S.reminderTime, { color: item.enabled ? colors.primary : colors.textMuted }]}>
                     {pad(item.hour)}:{pad(item.minute)}
                   </Text>
-                  <Text style={[styles.reminderLabel, !item.enabled && styles.disabledText]}>
+                  <Text style={[S.reminderLabel, !item.enabled && S.disabledText]}>
                     {item.label}
                   </Text>
-                  <Text style={styles.reminderRepeat}>
+                  <Text style={S.reminderRepeat}>
                     {item.repeat ? t('every_day') : t('once_only')}
                   </Text>
                 </View>
-                <View style={styles.reminderRight}>
+                <View style={S.reminderRight}>
                   <Switch value={item.enabled} onValueChange={() => toggle(item)}
                     trackColor={{ false: colors.border, true: colors.primaryDark }}
                     thumbColor={item.enabled ? colors.primary : colors.textMuted} />
-                  <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
+                  <TouchableOpacity onPress={() => openEdit(item)} style={S.iconBtn}>
                     <Ionicons name="pencil" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => remove(item)} style={styles.iconBtn}>
+                  <TouchableOpacity onPress={() => remove(item)} style={S.iconBtn}>
                     <Ionicons name="trash-outline" size={16} color={colors.error} />
                   </TouchableOpacity>
                 </View>
@@ -151,58 +153,58 @@ export default function RemindersScreen() {
       </ScrollView>
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <LinearGradient colors={['#1C1C2E', '#0D0D1A']} style={styles.modalInner}>
-              <Text style={styles.modalTitle}>
+        <View style={S.overlay}>
+          <View style={S.modal}>
+            <LinearGradient colors={colors.gradientDark} style={S.modalInner}>
+              <Text style={S.modalTitle}>
                 {editItem ? t('edit_reminder_title') : t('new_reminder_title')}
               </Text>
 
-              <Text style={styles.fieldLabel}>{t('reminder_name_field')}</Text>
-              <View style={styles.inputBox}>
-                <TextInput style={styles.input} value={label} onChangeText={setLabel}
+              <Text style={S.fieldLabel}>{t('reminder_name_field')}</Text>
+              <View style={S.inputBox}>
+                <TextInput style={S.input} value={label} onChangeText={setLabel}
                   placeholder={t('name_placeholder')} placeholderTextColor={colors.textMuted} />
               </View>
 
-              <Text style={styles.fieldLabel}>{t('time_field')}</Text>
-              <View style={styles.timeRow}>
-                <View style={styles.timeBox}>
-                  <TextInput style={styles.timeInput} value={hour}
+              <Text style={S.fieldLabel}>{t('time_field')}</Text>
+              <View style={S.timeRow}>
+                <View style={S.timeBox}>
+                  <TextInput style={S.timeInput} value={hour}
                     onChangeText={t2 => setHour(t2.replace(/[^0-9]/g, '').slice(0, 2))}
                     keyboardType="numeric" maxLength={2} placeholder="08"
                     placeholderTextColor={colors.textMuted} />
-                  <Text style={styles.timeLabel}>{t('hour_label')}</Text>
+                  <Text style={S.timeLabel}>{t('hour_label')}</Text>
                 </View>
-                <Text style={styles.timeSep}>:</Text>
-                <View style={styles.timeBox}>
-                  <TextInput style={styles.timeInput} value={minute}
+                <Text style={S.timeSep}>:</Text>
+                <View style={S.timeBox}>
+                  <TextInput style={S.timeInput} value={minute}
                     onChangeText={t2 => setMinute(t2.replace(/[^0-9]/g, '').slice(0, 2))}
                     keyboardType="numeric" maxLength={2} placeholder="00"
                     placeholderTextColor={colors.textMuted} />
-                  <Text style={styles.timeLabel}>{t('minute_label')}</Text>
+                  <Text style={S.timeLabel}>{t('minute_label')}</Text>
                 </View>
               </View>
 
-              <View style={styles.repeatRow}>
-                <Text style={styles.fieldLabel}>{t('repeat_daily')}</Text>
+              <View style={S.repeatRow}>
+                <Text style={S.fieldLabel}>{t('repeat_daily')}</Text>
                 <Switch value={repeat} onValueChange={setRepeat}
                   trackColor={{ false: colors.border, true: colors.primaryDark }}
                   thumbColor={repeat ? colors.primary : colors.textMuted} />
               </View>
 
-              <View style={styles.testRow}>
-                <TouchableOpacity style={styles.testBtn} onPress={() => bellService.ring(1)} activeOpacity={0.8}>
-                  <Text style={styles.testBtnText}>{t('test_bell')}</Text>
+              <View style={S.testRow}>
+                <TouchableOpacity style={S.testBtn} onPress={() => bellService.ring(1)} activeOpacity={0.8}>
+                  <Text style={S.testBtnText}>{t('test_bell')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)} activeOpacity={0.8}>
-                  <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
+              <View style={S.modalButtons}>
+                <TouchableOpacity style={S.cancelBtn} onPress={() => setModalVisible(false)} activeOpacity={0.8}>
+                  <Text style={S.cancelBtnText}>{t('cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.saveBtn} onPress={confirmSave} activeOpacity={0.8}>
-                  <LinearGradient colors={colors.gradientGold} style={styles.saveBtnGrad}>
-                    <Text style={styles.saveBtnText}>{t('save')}</Text>
+                <TouchableOpacity style={S.saveBtn} onPress={confirmSave} activeOpacity={0.8}>
+                  <LinearGradient colors={colors.gradientGold} style={S.saveBtnGrad}>
+                    <Text style={S.saveBtnText}>{t('save')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -214,48 +216,48 @@ export default function RemindersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: colors.background },
+const makeStyles = (c) => StyleSheet.create({
+  container:      { flex: 1, backgroundColor: c.background },
   header:         { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  headerTitle:    { fontSize: typography.fontSizes.xl, fontWeight: typography.fontWeights.bold, color: colors.primary },
-  headerSub:      { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2 },
+  headerTitle:    { fontSize: typography.fontSizes.xl, fontWeight: typography.fontWeights.bold, color: c.primary },
+  headerSub:      { fontSize: typography.fontSizes.xs, color: c.textMuted, marginTop: 2 },
   scroll:         { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   addButton:      { borderRadius: borderRadius.lg, overflow: 'hidden', marginBottom: spacing.lg },
   addButtonInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md },
-  addButtonText:  { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.bold, color: '#000' },
+  addButtonText:  { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.bold, color: c.isDark ? '#000' : '#fff' },
   empty:          { alignItems: 'center', paddingVertical: spacing.xxl * 2 },
   emptyIcon:      { fontSize: 56, marginBottom: spacing.md },
-  emptyText:      { fontSize: typography.fontSizes.lg, fontWeight: typography.fontWeights.semibold, color: colors.textSecondary },
-  emptySub:       { fontSize: typography.fontSizes.sm, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
-  reminderCard:   { marginBottom: spacing.sm, borderRadius: borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+  emptyText:      { fontSize: typography.fontSizes.lg, fontWeight: typography.fontWeights.semibold, color: c.textSecondary },
+  emptySub:       { fontSize: typography.fontSizes.sm, color: c.textMuted, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
+  reminderCard:   { marginBottom: spacing.sm, borderRadius: borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: c.border },
   reminderInner:  { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
   reminderLeft:   { flex: 1 },
   reminderTime:   { fontSize: typography.fontSizes.xxl, fontWeight: typography.fontWeights.heavy, fontVariant: ['tabular-nums'] },
-  reminderLabel:  { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.medium, color: colors.textPrimary, marginTop: 2 },
-  reminderRepeat: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 4 },
-  disabledText:   { color: colors.textMuted },
+  reminderLabel:  { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.medium, color: c.textPrimary, marginTop: 2 },
+  reminderRepeat: { fontSize: typography.fontSizes.xs, color: c.textMuted, marginTop: 4 },
+  disabledText:   { color: c.textMuted },
   reminderRight:  { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   iconBtn:        { padding: spacing.xs },
   overlay:        { flex: 1, backgroundColor: '#000000CC', justifyContent: 'flex-end' },
   modal:          { borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, overflow: 'hidden' },
   modalInner:     { padding: spacing.xl },
-  modalTitle:     { fontSize: typography.fontSizes.xl, fontWeight: typography.fontWeights.bold, color: colors.primary, marginBottom: spacing.lg },
-  fieldLabel:     { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontWeight: typography.fontWeights.semibold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
-  inputBox:       { backgroundColor: colors.surfaceElevated, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.lg },
-  input:          { fontSize: typography.fontSizes.md, color: colors.textPrimary, paddingVertical: spacing.md },
+  modalTitle:     { fontSize: typography.fontSizes.xl, fontWeight: typography.fontWeights.bold, color: c.primary, marginBottom: spacing.lg },
+  fieldLabel:     { fontSize: typography.fontSizes.xs, color: c.textMuted, fontWeight: typography.fontWeights.semibold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  inputBox:       { backgroundColor: c.surfaceElevated, borderRadius: borderRadius.md, borderWidth: 1, borderColor: c.border, paddingHorizontal: spacing.md, marginBottom: spacing.lg },
+  input:          { fontSize: typography.fontSizes.md, color: c.textPrimary, paddingVertical: spacing.md },
   timeRow:        { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
-  timeBox:        { flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, alignItems: 'center' },
-  timeInput:      { fontSize: typography.fontSizes.huge, fontWeight: typography.fontWeights.heavy, color: colors.primary, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  timeLabel:      { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 4 },
-  timeSep:        { fontSize: typography.fontSizes.huge, fontWeight: typography.fontWeights.heavy, color: colors.primary },
+  timeBox:        { flex: 1, backgroundColor: c.surfaceElevated, borderRadius: borderRadius.md, borderWidth: 1, borderColor: c.border, padding: spacing.md, alignItems: 'center' },
+  timeInput:      { fontSize: typography.fontSizes.huge, fontWeight: typography.fontWeights.heavy, color: c.primary, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  timeLabel:      { fontSize: typography.fontSizes.xs, color: c.textMuted, marginTop: 4 },
+  timeSep:        { fontSize: typography.fontSizes.huge, fontWeight: typography.fontWeights.heavy, color: c.primary },
   repeatRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   testRow:        { marginBottom: spacing.lg },
-  testBtn:        { backgroundColor: colors.surfaceElevated, borderRadius: borderRadius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  testBtnText:    { fontSize: typography.fontSizes.sm, color: colors.textSecondary },
+  testBtn:        { backgroundColor: c.surfaceElevated, borderRadius: borderRadius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, alignItems: 'center', borderWidth: 1, borderColor: c.border },
+  testBtnText:    { fontSize: typography.fontSizes.sm, color: c.textSecondary },
   modalButtons:   { flexDirection: 'row', gap: spacing.sm },
-  cancelBtn:      { flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: borderRadius.full, paddingVertical: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  cancelBtnText:  { fontSize: typography.fontSizes.md, color: colors.textSecondary },
+  cancelBtn:      { flex: 1, backgroundColor: c.surfaceElevated, borderRadius: borderRadius.full, paddingVertical: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: c.border },
+  cancelBtnText:  { fontSize: typography.fontSizes.md, color: c.textSecondary },
   saveBtn:        { flex: 1, borderRadius: borderRadius.full, overflow: 'hidden' },
   saveBtnGrad:    { paddingVertical: spacing.md, alignItems: 'center' },
-  saveBtnText:    { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.bold, color: '#000' },
+  saveBtnText:    { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.bold, color: c.isDark ? '#000' : '#fff' },
 });

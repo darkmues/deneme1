@@ -10,6 +10,7 @@ import ClockScreen from '../screens/ClockScreen';
 import HoursScreen from '../screens/HoursScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import JournalScreen from '../screens/JournalScreen';
+import ChurchMapScreen from '../screens/ChurchMapScreen';
 import RemindersScreen from '../screens/RemindersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { useTheme } from '../theme';
@@ -70,6 +71,10 @@ export default function AppNavigator() {
         <Tab.Screen name="Journal" component={JournalScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_journal" color={color} />,
           tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'book' : 'book-outline'} focused={focused} colors={colors} />,
+        }} />
+        <Tab.Screen name="Map" component={ChurchMapScreen} options={{
+          tabBarLabel: ({ color }) => <TabLabel labelKey="tab_map" color={color} />,
+          tabBarIcon: ({ focused }) => <GoldTabIcon name={focused ? 'map' : 'map-outline'} focused={focused} colors={colors} />,
         }} />
         <Tab.Screen name="Reminders" component={RemindersScreen} options={{
           tabBarLabel: ({ color }) => <TabLabel labelKey="tab_reminders" color={color} />,

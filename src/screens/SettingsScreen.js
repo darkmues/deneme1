@@ -10,6 +10,7 @@ import { notificationService } from '../services/notificationService';
 import { bellService } from '../services/bellService';
 import { useTheme, THEME_META, typography, spacing, borderRadius } from '../theme';
 import { useI18n, LANGUAGES } from '../i18n';
+import { useDenomination } from '../context/DenominationContext';
 
 const SETTINGS_KEY = '@settings_v1';
 const DEFAULT = { notifications: false, bellSound: true, angelusOnly: false };
@@ -19,7 +20,14 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { colors, themeName, changeTheme } = useTheme();
   const { t, locale, changeLocale } = useI18n();
+  const { denomination, setDenomination } = useDenomination();
   const S = useMemo(() => makeStyles(colors), [colors]);
+
+  const DENOMINATIONS = [
+    { key: 'catholic',   icon: '✝',  labelKey: 'denomination_catholic' },
+    { key: 'orthodox',   icon: '☦',  labelKey: 'denomination_orthodox' },
+    { key: 'protestant', icon: '🕊',  labelKey: 'denomination_protestant' },
+  ];
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -84,6 +92,26 @@ export default function SettingsScreen() {
                   style={[S.langItemInner, active && { borderColor: colors.primary }]}>
                   <Text style={S.langFlag}>{lang.flag}</Text>
                   <Text style={[S.langName, active && { color: colors.primary }]}>{lang.name}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={14} color={colors.primary} />}
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Denomination */}
+        <Text style={S.sectionTitle}>{t('denomination_section')}</Text>
+        <View style={S.langGrid}>
+          {DENOMINATIONS.map(d => {
+            const active = denomination === d.key;
+            return (
+              <TouchableOpacity key={d.key} onPress={() => setDenomination(d.key)}
+                activeOpacity={0.7} style={S.langItem}>
+                <LinearGradient
+                  colors={active ? [colors.primaryFaint, colors.primaryFaint] : [colors.surfaceElevated, colors.surfaceElevated]}
+                  style={[S.langItemInner, active && { borderColor: colors.primary }]}>
+                  <Text style={S.langFlag}>{d.icon}</Text>
+                  <Text style={[S.langName, active && { color: colors.primary }]}>{t(d.labelKey)}</Text>
                   {active && <Ionicons name="checkmark-circle" size={14} color={colors.primary} />}
                 </LinearGradient>
               </TouchableOpacity>

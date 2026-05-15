@@ -31,7 +31,9 @@
         "VIBRATE",
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -50,6 +52,12 @@
           "icon": "./assets/icon.png",
           "color": "#C9A84C",
           "sounds": []
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yakındaki kiliseleri göstermek için konum gerekli."
         }
       ]
     ]

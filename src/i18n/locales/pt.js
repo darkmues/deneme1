@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: 'OFÍCIOS DIVINOS DIÁRIOS',
+  protestant_hours_section: 'ORAÇÕES DIÁRIAS',
   coming_soon: 'Em Breve', coming_soon_msg: 'Este recurso estará disponível em breve.',
   bg_notifications_title: 'Notificações', bg_notifications_msg: 'Notificações agendadas.',
   notification_permission_title: 'Permissão de Notificação', notification_permission_msg: 'Permissão necessária para receber notificações de oração.',

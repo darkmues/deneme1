@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: 'DAGELIJKSE GODDELIJKE DIENSTEN',
+  protestant_hours_section: 'DAGELIJKSE GEBEDEN',
   coming_soon: 'Binnenkort', coming_soon_msg: 'Deze functie is binnenkort beschikbaar.',
   bg_notifications_title: 'Meldingen', bg_notifications_msg: 'Meldingen gepland.',
   notification_permission_title: 'Meldingstoestemming', notification_permission_msg: 'Toestemming vereist voor gebedsmeldingen.',

@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: '매일 신성한 예배',
+  protestant_hours_section: '매일 기도',
   coming_soon: '곧 출시', coming_soon_msg: '이 기능은 곧 사용 가능합니다.',
   bg_notifications_title: '알림', bg_notifications_msg: '알림이 예약되었습니다.',
   notification_permission_title: '알림 권한', notification_permission_msg: '기도 알림을 받으려면 권한이 필요합니다.',

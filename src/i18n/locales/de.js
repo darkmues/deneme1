@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: 'TÄGLICHE GOTTESDIENSTE',
+  protestant_hours_section: 'TÄGLICHE GEBETE',
   coming_soon: 'Demnächst', coming_soon_msg: 'Diese Funktion wird bald verfügbar sein.',
   bg_notifications_title: 'Benachrichtigungen', bg_notifications_msg: 'Benachrichtigungen geplant.',
   notification_permission_title: 'Benachrichtigungsberechtigung', notification_permission_msg: 'Berechtigung für Gebetszeit-Benachrichtigungen erforderlich.',

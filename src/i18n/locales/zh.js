@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: '每日神圣礼拜',
+  protestant_hours_section: '每日祷告',
   coming_soon: '即将推出', coming_soon_msg: '此功能即将推出。',
   bg_notifications_title: '通知', bg_notifications_msg: '通知已安排。',
   notification_permission_title: '通知权限', notification_permission_msg: '需要权限才能接收祈祷通知。',

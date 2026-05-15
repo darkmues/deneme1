@@ -114,6 +114,8 @@ export default {
   map_permission_denied: 'Location permission denied. Enable it in Settings.',
   map_retry: 'Try Again',
   map_open_maps: 'Open in Maps',
+  orthodox_hours_section: 'الخدمات الإلهية اليومية',
+  protestant_hours_section: 'الصلوات اليومية',
   coming_soon: 'قريباً', coming_soon_msg: 'ستتوفر هذه الميزة قريباً.',
   bg_notifications_title: 'إشعارات', bg_notifications_msg: 'تمت جدولة الإشعارات.',
   notification_permission_title: 'إذن الإشعارات', notification_permission_msg: 'الإذن مطلوب لتلقي إشعارات الصلاة.',
